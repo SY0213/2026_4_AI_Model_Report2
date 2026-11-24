@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>분리수거 도우미 AI 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: one worksheet column following the textbook's 5 steps; sticky progress bar; numeric inputs and photo-number chips. */
+:root{
+  --bg:#F5F7F4; --paper:#FFFFFF; --ink:#1F2A24; --muted:#5B6B62; --line:#DCE5DF; --soft:#EAF1EC;
+  --accent:#1F7A4D; --accent-ink:#FFFFFF; --can:#C8323F; --pet:#1E66C8; --pack:#B07A12; --warn:#C0392B; --ok:#1F7A4D;
+  --can-bg:#FBE9EB; --pet-bg:#E7F0FC; --pack-bg:#FBF2DF;
+  --font:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121815; --paper:#1B2420; --ink:#E6EFEA; --muted:#A3B5AB; --line:#2E3B35; --soft:#22302A;
+  --accent:#4FC08A; --accent-ink:#0E1A14; --can:#FF7A85; --pet:#7CB0FF; --pack:#E8B94E; --warn:#FF7B6B; --ok:#4FC08A;
+  --can-bg:#3A2125; --pet-bg:#1D2C44; --pack-bg:#3A2F17; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121815; --paper:#1B2420; --ink:#E6EFEA; --muted:#A3B5AB; --line:#2E3B35; --soft:#22302A;
+  --accent:#4FC08A; --accent-ink:#0E1A14; --can:#FF7A85; --pet:#7CB0FF; --pack:#E8B94E; --warn:#FF7B6B; --ok:#4FC08A;
+  --can-bg:#3A2125; --pet-bg:#1D2C44; --pack-bg:#3A2F17; color-scheme:dark}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:780px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header.top{padding-block:28px 4px;display:flex;flex-direction:column;gap:6px}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--accent)}
+h1{font-size:clamp(24px,5vw,32px);font-weight:900;line-height:1.25;margin:0;text-wrap:balance}
+.lead{color:var(--muted);margin:0}
+.bins{display:flex;gap:8px;flex-wrap:wrap}
+.bin{font-size:12px;font-weight:700;border-radius:99px;padding:3px 12px}
+.bin.can{background:var(--can-bg);color:var(--can)} .bin.pet{background:var(--pet-bg);color:var(--pet)} .bin.pack{background:var(--pack-bg);color:var(--pack)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:10px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line)}
+.meter{flex:1;height:8px;border-radius:99px;background:var(--soft);overflow:hidden}
+.meter span{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+.bar b{font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+section{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.sec-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.num{width:30px;height:30px;border-radius:50%;background:var(--muted);color:var(--paper);display:grid;place-items:center;font-weight:900;font-size:14px;flex:none}
+.done .num{background:var(--ok)}
+h2{font-size:18px;margin:0;font-weight:900}
+.tag{font-size:12px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:1px 10px}
+.hint{font-size:13px;color:var(--muted);margin:0}
+label.f,.f{display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:14px}
+input[type=text],input[type=number],textarea{font:inherit;font-weight:400;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+input[type=number]{font-family:var(--mono);font-weight:600;font-variant-numeric:tabular-nums}
+textarea{min-height:76px;resize:vertical}
+input:focus,textarea:focus,button:focus-visible,.opt input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:560px){.row{grid-template-columns:1fr}}
+.cnt label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:700}
+.cnt .can{color:var(--can)} .cnt .pet{color:var(--pet)} .cnt .pack{color:var(--pack)}
+.folder{display:flex;flex-direction:column;gap:6px}
+.folder b{font-size:13px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-weight:600;font-size:13px;min-width:44px;padding:7px 0;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;font-variant-numeric:tabular-nums}
+.chip[aria-pressed="true"]{background:var(--warn);border-color:var(--warn);color:#fff}
+.chips.test .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.picked{font-size:13px;color:var(--muted);margin:0;min-height:20px}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{display:flex;position:relative}
+.opt input{position:absolute;opacity:0}
+.opt span{flex:1;border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;background:var(--bg);font-size:14px}
+.opt input:checked+span{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--soft);font-weight:700}
+.score{display:flex;flex-direction:row;justify-content:flex-start;align-items:center;gap:10px;flex-wrap:wrap}
+.score input{width:96px}
+.score small{color:var(--muted);font-weight:500}
+.acc{display:grid;grid-template-columns:64px 1fr 56px;gap:10px;align-items:center;font-size:13px;font-weight:700}
+.acc .track{height:14px;border-radius:99px;background:var(--soft);overflow:hidden}
+.acc .fill{height:100%;width:0;background:var(--muted);transition:width .3s}
+.acc .fill.b{background:var(--accent)}
+.acc em{font-style:normal;font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+.warn{font-size:13px;color:var(--warn);margin:0;min-height:0}
+.submit{background:var(--ink);color:var(--bg);border:none}
+.submit h2{color:var(--bg)}
+.submit .hint{color:var(--bg);opacity:.85}
+.missing{font-size:13px;color:#FFD0C9;margin:0}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+button.big{font:inherit;font-weight:700;border-radius:10px;padding:11px 18px;cursor:pointer;border:1px solid transparent}
+.primary{background:var(--accent);color:var(--accent-ink)}
+.ghost{background:transparent;color:var(--bg);border-color:rgba(255,255,255,.35)!important}
+button:disabled{opacity:.6;cursor:wait}
+body.locked .chip:disabled,body.locked input:disabled,body.locked textarea:disabled{cursor:not-allowed}
+body.locked .submit .toast{font-weight:700;font-size:1.05em}
+.toast{font-size:14px;font-weight:700;min-height:22px;margin:0}
+.fallback{border:1px dashed rgba(255,255,255,.3);border-radius:10px;padding:10px 12px}
+.fallback summary{cursor:pointer;font-weight:700;font-size:13px}
+.out{font-size:13px;min-height:160px;margin-top:10px;background:var(--paper);color:var(--ink)}
+.privacy{font-size:12px;color:var(--muted);text-align:center;margin:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">5차시 수행평가 2단계 · 인공지능 모델을 활용한 문제 해결</div>
+    <h1>분리수거 도우미 AI 보고서</h1>
+    <p class="lead">엔트리로 모델을 만들고, 평가하고, 고친 과정을 순서대로 기록하세요.</p>
+    <div class="bins"><span class="bin can">캔</span><span class="bin pet">페트병</span><span class="bin pack">종이팩</span></div>
+  </header>
+
+  <div class="bar" aria-live="polite"><div class="meter"><span id="meter"></span></div><b id="count">0 / 6 단계</b></div>
+
+  <section>
+    <div class="sec-head"><h2>내 정보</h2></div>
+    <div class="row">
+      <label class="f">학번 <input type="text" id="sid" inputmode="numeric" autocomplete="off"></label>
+      <label class="f">이름 <input type="text" id="sname" placeholder="이름" autocomplete="off"></label>
+    </div>
+  </section>
+
+  <section data-sec>
+    <div class="sec-head"><span class="num">1</span><h2>문제 정의하기</h2><span class="tag">설계·데이터</span></div>
+    <label class="f">내가 만든 AI 이름 <input type="text" id="ainame"></label>
+    <div class="f">클래스 이름 3개</div>
+    <div class="row3">
+      <input type="text" id="c1" aria-label="클래스 1" placeholder="클래스 1">
+      <input type="text" id="c2" aria-label="클래스 2" placeholder="클래스 2">
+      <input type="text" id="c3" aria-label="클래스 3" placeholder="클래스 3">
+    </div>
+  </section>
+
+  <section data-sec>
+    <div class="sec-head"><span class="num">2</span><h2>데이터 수집 및 분류하기</h2><span class="tag">설계·데이터</span></div>
+    <p class="hint">‘1_1차학습’ 폴더에 잘못 섞인 사진이 있어요. 학습에서 뺀 사진의 번호를 모두 눌러 표시하세요.</p>
+    <div class="folder"><b style="color:var(--can)">캔 폴더</b><div class="chips" data-folder="캔" data-n="7"></div></div>
+    <div class="folder"><b style="color:var(--pet)">페트병 폴더</b><div class="chips" data-folder="페트병" data-n="6"></div></div>
+    <div class="folder"><b style="color:var(--pack)">종이팩 폴더</b><div class="chips" data-folder="종이팩" data-n="6"></div></div>
+    <p class="picked" id="picked">아직 뺀 사진이 없어요.</p>
+    <label class="f">그 사진들을 뺀 이유 <textarea id="delwhy"></textarea></label>
+    <div class="f">1차 학습에 넣은 사진 수</div>
+    <div class="row3 cnt">
+      <label><span class="can">캔</span><input type="number" id="n1a" min="0" max="99" inputmode="numeric"></label>
+      <label><span class="pet">페트병</span><input type="number" id="n1b" min="0" max="99" inputmode="numeric"></label>
+      <label><span class="pack">종이팩</span><input type="number" id="n1c" min="0" max="99" inputmode="numeric"></label>
+    </div>
+  </section>
+
+  <section data-sec>
+    <div class="sec-head"><span class="num">3</span><h2>1차 모델 평가하기</h2><span class="tag">설계·데이터</span></div>
+    <p class="hint">‘3_테스트’ 사진 10장을 하나씩 넣어 보세요. 테스트 사진은 학습에 넣으면 안 돼요.</p>
+    <div class="score f">테스트 10장 중 맞힌 수 <span><input type="number" id="t1" min="0" max="10" inputmode="numeric"> <small>/ 10장</small></span></div>
+    <div class="f">틀린 테스트 사진 번호</div>
+    <div class="chips test" data-test="wrong1"></div>
+    <p class="warn" id="w1"></p>
+    <label class="f">왜 틀렸을까? (내 생각) <textarea id="why1"></textarea></label>
+  </section>
+
+  <section data-sec>
+    <div class="sec-head"><span class="num">4</span><h2>모델 개선하기</h2><span class="tag">평가·개선</span></div>
+    <div class="f">어떻게 고쳤나요? (모두 고르기)</div>
+    <div class="opts">
+      <label class="opt"><input type="checkbox" name="imp" value="다양한 배경 사진 추가"><span>다양한 배경의 사진을 추가했다</span></label>
+      <label class="opt"><input type="checkbox" name="imp" value="다양한 색 사진 추가"><span>여러 가지 색의 사진을 추가했다</span></label>
+      <label class="opt"><input type="checkbox" name="imp" value="눕히거나 찌그러진 사진 추가"><span>눕히거나 기울이거나 찌그러진 사진을 추가했다</span></label>
+      <label class="opt"><input type="checkbox" name="imp" value="잘못된 사진 다시 확인해 삭제"><span>잘못 들어간 사진이 없는지 다시 확인해 뺐다</span></label>
+    </div>
+    <label class="f">그렇게 고친 이유 <textarea id="impwhy"></textarea></label>
+  </section>
+
+  <section data-sec>
+    <div class="sec-head"><span class="num">5</span><h2>다시 평가하기</h2><span class="tag">평가·개선</span></div>
+    <div class="f">개선 후 학습에 넣은 사진 수</div>
+    <div class="row3 cnt">
+      <label><span class="can">캔</span><input type="number" id="n2a" min="0" max="99" inputmode="numeric"></label>
+      <label><span class="pet">페트병</span><input type="number" id="n2b" min="0" max="99" inputmode="numeric"></label>
+      <label><span class="pack">종이팩</span><input type="number" id="n2c" min="0" max="99" inputmode="numeric"></label>
+    </div>
+    <div class="score f">같은 테스트 10장 중 맞힌 수 <span><input type="number" id="t2" min="0" max="10" inputmode="numeric"> <small>/ 10장</small></span></div>
+    <div class="acc"><span>1차</span><div class="track"><div class="fill" id="f1"></div></div><em id="e1">–</em></div>
+    <div class="acc"><span>개선 후</span><div class="track"><div class="fill b" id="f2"></div></div><em id="e2">–</em></div>
+    <label class="f">1차와 비교해 보면? <textarea id="cmp"></textarea></label>
+  </section>
+
+  <section data-sec>
+    <div class="sec-head"><span class="num">6</span><h2>활용과 성찰</h2><span class="tag">평가·개선</span></div>
+    <label class="f">이 AI를 어디에 쓸 수 있을까? <textarea id="use"></textarea></label>
+    <label class="f">데이터를 모을 때 꼭 지켜야 할 점은? <textarea id="care"></textarea></label>
+  </section>
+
+  <section class="submit">
+    <div class="sec-head"><h2>제출하기</h2></div>
+    <p class="hint">제출은 <b>한 번만</b> 할 수 있어요. 제출한 뒤에는 고칠 수 없으니, 모든 칸을 다시 확인하고 내세요.</p>
+    <p class="missing" id="missing"></p>
+    <div class="btns">
+      <button type="button" class="big primary" id="submitBtn">제출</button>
+      <button type="button" class="big ghost" id="clearBtn">처음부터 다시 쓰기</button>
+      <button type="button" class="big primary" id="nextBtn" hidden>다음 학생이 쓰기 (화면 초기화)</button>
+    </div>
+    <p class="toast" id="toast" role="status"></p>
+    <details class="fallback">
+      <summary>제출이 안 될 때</summary>
+      <p class="hint" style="margin-top:8px">‘보고서 복사’를 누른 뒤 선생님이 안내한 곳에 붙여넣으세요.</p>
+      <div class="btns" style="margin-top:8px"><button type="button" class="big ghost" id="copyBtn">보고서 복사</button></div>
+      <textarea class="out" id="out" readonly aria-label="제출용 보고서 내용"></textarea>
+    </details>
+  </section>
+
+  <p class="privacy">쓰는 중인 내용은 이 컴퓨터에만 임시로 남고, ‘제출’을 눌러야 선생님께 전달됩니다. 제출은 한 번만 할 수 있어요.</p>
+</div>
+
+<script>
+(function(){
+  /* ▼ 선생님 설정: 구글 앱스 스크립트 웹 앱 주소를 따옴표 안에 붙여넣으세요 */
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhV78BZVGHhPY54kYpd_LA4uYOe5SS9H99qIrv_FZiVIKE4FVC1AVlfdTCG4XERuxUhQ/exec";
+  const SET = "v2";  // 사진 세트: v2 = 새 사진 세트 (함정 4장)
+  /* ▲ 여기까지 */
+  const KEY = "recycle-ai-report-draft", IDKEY = "recycle-ai-report-id", DONEKEY = "recycle-ai-report-done";
+  const $ = (id) => document.getElementById(id);
+  const TEXT = ["sid","sname","ainame","c1","c2","c3","delwhy","n1a","n1b","n1c","t1","why1","impwhy","n2a","n2b","n2c","t2","cmp","use","care"];
+  const v = (id) => $(id).value.trim();
+  const isNum = (s, max) => /^\d+$/.test(s) && Number(s) <= max;
+  const len = (s) => s.replace(/\s/g, "").length;
+  const pad = (n) => String(n).padStart(2, "0");
+
+  // build chips
+  document.querySelectorAll(".chips[data-folder]").forEach(box => {
+    for (let i = 1; i <= Number(box.dataset.n); i++) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "chip"; b.textContent = pad(i);
+      b.dataset.value = box.dataset.folder + "_" + pad(i); b.setAttribute("aria-pressed", "false");
+      b.setAttribute("aria-label", box.dataset.folder + " " + pad(i) + "번 사진 뺐음");
+      box.appendChild(b);
+    }
+  });
+  const testBox = document.querySelector(".chips.test");
+  for (let i = 1; i <= 10; i++) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.textContent = pad(i); b.dataset.value = pad(i);
+    b.setAttribute("aria-pressed", "false"); b.setAttribute("aria-label", "테스트 " + pad(i) + "번 틀림");
+    testBox.appendChild(b);
+  }
+  const pressed = (sel) => [...document.querySelectorAll(sel + ' .chip[aria-pressed="true"]')].map(b => b.dataset.value);
+  const deleted = () => pressed(".chips[data-folder]");
+  const wrong1 = () => pressed(".chips.test");
+  const imps = () => [...document.querySelectorAll('input[name="imp"]:checked')].map(e => e.value);
+
+  function load(){
+    let d = null;
+    try { d = JSON.parse(localStorage.getItem(KEY) || "null"); } catch(e) {}
+    if (!d) return;
+    TEXT.forEach(f => { if (typeof d[f] === "string") $(f).value = d[f]; });
+    (d.del || []).concat(d.wrong1 || []).forEach(val => {
+      document.querySelectorAll('.chip').forEach(b => { if (b.dataset.value === val) b.setAttribute("aria-pressed", "true"); });
+    });
+    (d.imp || []).forEach(val => document.querySelectorAll('input[name="imp"]').forEach(e => { if (e.value === val) e.checked = true; }));
+  }
+  function save(){
+    const d = {}; TEXT.forEach(f => d[f] = $(f).value);
+    d.del = deleted(); d.wrong1 = wrong1(); d.imp = imps();
+    try { localStorage.setItem(KEY, JSON.stringify(d)); } catch(e) {}
+  }
+
+  function sections(){
+    const n1 = [v("n1a"), v("n1b"), v("n1c")], n2 = [v("n2a"), v("n2b"), v("n2c")];
+    return [
+      ["문제 정의", !!v("ainame") && !!v("c1") && !!v("c2") && !!v("c3")],
+      ["데이터 수집 및 분류", deleted().length > 0 && !!v("delwhy") && n1.every(x => isNum(x, 99))],
+      ["1차 평가", isNum(v("t1"), 10) && !!v("why1")],
+      ["모델 개선", imps().length > 0 && !!v("impwhy")],
+      ["다시 평가", n2.every(x => isNum(x, 99)) && isNum(v("t2"), 10) && !!v("cmp")],
+      ["활용과 성찰", !!v("use") && !!v("care")]
+    ];
+  }
+
+  function build(){
+    const L = [];
+    L.push("[분리수거 도우미 AI 보고서]");
+    L.push("학번: " + (v("sid") || "-") + "   이름: " + (v("sname") || "-"), "");
+    L.push("1. 문제 정의: " + (v("ainame") || "-") + " / 클래스: " + [v("c1"), v("c2"), v("c3")].map(x => x || "-").join(", "), "");
+    L.push("2. 뺀 사진: " + (deleted().join(", ") || "-"));
+    L.push("   뺀 이유: " + (v("delwhy") || "-"));
+    L.push("   1차 사진 수: 캔 " + (v("n1a") || "-") + " · 페트병 " + (v("n1b") || "-") + " · 종이팩 " + (v("n1c") || "-"), "");
+    L.push("3. 1차 맞힌 수: " + (v("t1") || "-") + " / 10   틀린 사진: " + (wrong1().join(", ") || "-"));
+    L.push("   틀린 이유: " + (v("why1") || "-"), "");
+    L.push("4. 개선 방법: " + (imps().join(", ") || "-"));
+    L.push("   이유: " + (v("impwhy") || "-"), "");
+    L.push("5. 개선 후 사진 수: 캔 " + (v("n2a") || "-") + " · 페트병 " + (v("n2b") || "-") + " · 종이팩 " + (v("n2c") || "-"));
+    L.push("   개선 후 맞힌 수: " + (v("t2") || "-") + " / 10");
+    L.push("   1차와 비교: " + (v("cmp") || "-"), "");
+    L.push("6. 활용: " + (v("use") || "-"));
+    L.push("   지킬 점: " + (v("care") || "-"));
+    return L.join("\n");
+  }
+
+  function setAcc(fill, em, val){
+    if (isNum(val, 10)) { $(fill).style.width = (Number(val) * 10) + "%"; $(em).textContent = (Number(val) * 10) + "%"; }
+    else { $(fill).style.width = "0"; $(em).textContent = "–"; }
+  }
+
+  function render(){
+    const secs = sections();
+    const n = secs.filter(s => s[1]).length;
+    $("meter").style.width = (n / 6 * 100) + "%";
+    $("count").textContent = n + " / 6 단계";
+    document.querySelectorAll("[data-sec]").forEach((el, i) => el.classList.toggle("done", secs[i][1]));
+    const del = deleted();
+    $("picked").textContent = del.length ? "뺀 사진 " + del.length + "장: " + del.join(", ") : "아직 뺀 사진이 없어요.";
+    const t1 = v("t1"), w = wrong1().length;
+    $("w1").textContent = (isNum(t1, 10) && w && w !== 10 - Number(t1)) ? "맞힌 수가 " + t1 + "장이면 틀린 사진은 " + (10 - Number(t1)) + "장이어야 해요. 다시 확인해 보세요." : "";
+    setAcc("f1", "e1", t1); setAcc("f2", "e2", v("t2"));
+    const miss = [];
+    if (!v("sid") || !v("sname")) miss.push("학번·이름");
+    secs.forEach((s, i) => { if (!s[1]) miss.push((i + 1) + " " + s[0]); });
+    $("missing").textContent = miss.length ? "아직 덜 쓴 곳: " + miss.join(", ") : "모든 단계를 다 썼어요. 제출하세요!";
+    $("out").value = build();
+  }
+
+  document.addEventListener("click", (e) => {
+    const c = e.target.closest(".chip");
+    if (!c || locked) return;
+    c.setAttribute("aria-pressed", c.getAttribute("aria-pressed") === "true" ? "false" : "true");
+    save(); render(); resetConfirm();
+  });
+
+  async function copy(text){
+    const t = $("toast");
+    try { await navigator.clipboard.writeText(text); t.textContent = "보고서를 복사했어요. 선생님이 안내한 곳에 붙여넣으세요."; }
+    catch(e) { const o = $("out"); o.focus(); o.select(); t.textContent = "자동 복사가 안 돼요. 아래 글이 선택됐으니 Ctrl+C로 복사하세요."; }
+  }
+  $("copyBtn").addEventListener("click", () => copy(build()));
+
+  function getId(){
+    let id = null;
+    try { id = localStorage.getItem(IDKEY); } catch(e) {}
+    if (!id || id.indexOf(SET + "-") !== 0) { id = SET + "-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); try { localStorage.setItem(IDKEY, id); } catch(e) {} }
+    return id;
+  }
+  let confirmIncomplete = false, sending = false, confirmClear = false;
+  function resetConfirm(){
+    confirmClear = false; $("clearBtn").textContent = "처음부터 다시 쓰기";
+    if (confirmIncomplete && !sending) { confirmIncomplete = false; $("submitBtn").textContent = "제출"; }
+  }
+
+  $("submitBtn").addEventListener("click", async () => {
+    const t = $("toast"), btn = $("submitBtn");
+    if (sending) return;
+    if (!v("sid") || !v("sname")) { t.textContent = "학번과 이름을 먼저 써 주세요."; $("sid").focus(); return; }
+    const left = sections().filter(s => !s[1]).length;
+    if (!confirmIncomplete) {
+      confirmIncomplete = true; btn.textContent = left ? "그래도 제출하기" : "정말 제출하기";
+      t.textContent = (left ? "아직 덜 쓴 단계가 " + left + "개 있어요. " : "") + "제출은 한 번만 할 수 있고, 낸 뒤에는 고칠 수 없어요. 내려면 한 번 더 누르세요.";
+      return;
+    }
+    if (!SCRIPT_URL) { t.textContent = "제출 주소가 아직 설정되지 않았어요. 아래 ‘제출이 안 될 때’로 내 주세요."; document.querySelector(".fallback").open = true; return; }
+    const data = {
+      id: getId(), sid: v("sid").replace(/\s/g, ""), sname: v("sname"), ainame: v("ainame"), c1: v("c1"), c2: v("c2"), c3: v("c3"),
+      del: deleted().join(", "), delwhy: v("delwhy"), n1a: v("n1a"), n1b: v("n1b"), n1c: v("n1c"),
+      t1: v("t1"), wrong1: wrong1().join(", "), why1: v("why1"), imp: imps().join(", "), impwhy: v("impwhy"),
+      n2a: v("n2a"), n2b: v("n2b"), n2c: v("n2c"), t2: v("t2"), cmp: v("cmp"), use: v("use"), care: v("care")
+    };
+    sending = true; btn.disabled = true; btn.textContent = "보내는 중…"; t.textContent = "";
+    try {
+      const res = await fetch(SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(data) });
+      const out = await res.json();
+      if (out.already) { lockPage("이 학번(" + data.sid + ")으로 이미 제출한 보고서가 있어요. 다시 낼 수 없어요. 학번을 잘못 썼다면 선생님께 말씀드리세요."); return; }
+      if (!out.ok) throw new Error(out.error || "fail");
+      const when = new Date().toLocaleTimeString("ko-KR", {hour: "2-digit", minute: "2-digit"});
+      try { localStorage.setItem(DONEKEY, JSON.stringify({ sid: data.sid, sname: data.sname, when: when })); localStorage.removeItem(IDKEY); } catch(e) {}
+      lockPage(data.sid + " " + data.sname + " · " + when + "에 제출했어요. 제출은 한 번만 할 수 있어서 이제 고칠 수 없어요.");
+      return;
+    } catch(e) {
+      t.textContent = "제출이 안 됐어요. 잠시 뒤 다시 누르거나, 아래 ‘제출이 안 될 때’로 내 주세요.";
+      btn.textContent = "제출";
+      document.querySelector(".fallback").open = true;
+    } finally { sending = false; if (!locked) btn.disabled = false; confirmIncomplete = false; }
+  });
+
+  // 제출한 뒤에는 화면을 잠급니다
+  let locked = false;
+  function lockPage(msg){
+    locked = true;
+    document.querySelectorAll("input, textarea:not(#out), .chip").forEach(el => el.disabled = true);
+    $("submitBtn").hidden = true; $("clearBtn").hidden = true; $("nextBtn").hidden = false;
+    document.querySelector(".fallback").hidden = true;
+    $("missing").textContent = "";
+    $("toast").textContent = msg;
+    document.body.classList.add("locked");
+  }
+
+  $("clearBtn").addEventListener("click", () => {
+    if (!confirmClear) { confirmClear = true; $("clearBtn").textContent = "정말 지울까요? 한 번 더 누르기"; return; }
+    TEXT.forEach(f => $(f).value = "");
+    document.querySelectorAll(".chip").forEach(b => b.setAttribute("aria-pressed", "false"));
+    document.querySelectorAll('input[name="imp"]').forEach(e => e.checked = false);
+    try { localStorage.removeItem(KEY); localStorage.removeItem(IDKEY); } catch(e) {}
+    confirmClear = false; $("clearBtn").textContent = "처음부터 다시 쓰기"; $("toast").textContent = "모두 지웠어요.";
+    render();
+  });
+
+  // 같은 컴퓨터를 다음 반 학생이 쓸 때: 화면만 비웁니다 (같은 학번은 시트에서 다시 받지 않아요)
+  let confirmNext = false;
+  $("nextBtn").addEventListener("click", () => {
+    if (!confirmNext) { confirmNext = true; $("nextBtn").textContent = "화면을 비울까요? 한 번 더 누르기"; return; }
+    try { localStorage.removeItem(KEY); localStorage.removeItem(IDKEY); localStorage.removeItem(DONEKEY); } catch(e) {}
+    location.reload();
+  });
+
+  // 선생님용: 주소 끝에 ?reset 을 붙여 열면 이 컴퓨터의 저장 내용을 모두 지우고 새로 시작합니다
+  if (/[?&]reset\b/.test(location.search)) {
+    try { localStorage.removeItem(KEY); localStorage.removeItem(IDKEY); localStorage.removeItem(DONEKEY); } catch(e) {}
+    history.replaceState(null, "", location.pathname);
+  }
+
+  load(); render();
+  try { const done = JSON.parse(localStorage.getItem(DONEKEY) || "null"); if (done) lockPage(done.sid + " " + done.sname + " · " + done.when + "에 이미 제출했어요. 제출은 한 번만 할 수 있어요."); } catch(e) {}
+  document.addEventListener("input", () => { save(); render(); resetConfirm(); });
+  document.addEventListener("change", () => { save(); render(); });
+})();
+</script>
+</body>
+</html>
